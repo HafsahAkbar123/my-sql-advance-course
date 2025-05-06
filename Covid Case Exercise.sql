@@ -22,7 +22,7 @@ SELECT
 	cc.Country
 	, cc.DateRecorded
 	, cc.DailyCases
-	, 'your answer' AS CumulativeCases
+	, SUM(DailyCases) OVER (partition by Country order by DateRecorded) AS CumulativeCases
 FROM
 	CovidCase cc
 where cc.DateRecorded <= '2020-03-15' -- keep # rows returned manageable to avoid scrolling much
@@ -46,9 +46,7 @@ GROUP BY
 	cc.DateRecorded
     )
 SELECT
-	uk.DateRecorded
-	, uk.DailyCases
-	, 'your answer' CumulativeCases
+ '' as CumulativeCases
 FROM
 	uk
 ORDER BY
@@ -71,12 +69,12 @@ FROM
 GROUP BY
 	cc.DateRecorded
     )
-SELECT 
+SELECT top 3
 	uk.DateRecorded
 	, uk.DailyCases
-	, 'your answer' AS Ranking
+	, rank() over (order by DailyCases DESC) AS Ranking
 FROM
-	uk;
+	uk order by DailyCases DESC;
 
 /*
 Find the three days with the highest number of cases in each country 
@@ -92,13 +90,22 @@ SELECT
 	cc.Country
 	, cc.DateRecorded
 	, cc.DailyCases
+	, RANK() OVER (PARTITION BY cc.Country ORDER BY DailyCases DESC) AS Ranking
 FROM
 	CovidCase cc
     )
 SELECT
-	*
+	cte.Country
+	, cte.DateRecorded
+	, cte.DailyCases
+	, cte.Ranking
 FROM
 	cte
+WHERE 
+	cte.Ranking <= 3
+ORDER BY 
+	cte.Country
+	, cte.Ranking;
 
 /*
 Advanced Section
@@ -147,6 +154,7 @@ SELECT
 	, cc.Country
 	, cc.DailyCases
 	, AVG(cc.DailyCases) OVER (PARTITION BY cc.Country ORDER BY cc.DateRecorded ROWS BETWEEN 6 PRECEDING AND CURRENT ROW) SevenDayMovingAverageCases
+	, AVG (cc.DailyCases) OVER (PARTITION BY cc.Country ORDER BY cc.DateRecorded) Test
 FROM
 	CovidCase cc
 ORDER BY
